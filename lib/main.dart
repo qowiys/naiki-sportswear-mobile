@@ -1,4 +1,4 @@
-import 'package:naiki_sportswear/menu.dart';
+import 'package:naiki_sportswear/screens/menu.dart';
 import 'package:flutter/material.dart';
 
 void main() {

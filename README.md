@@ -134,3 +134,30 @@ Analogi Sederhana:
 
 - Hot Reload = Ganti wallpaper komputer (cepat, data tetap ada)
 - Hot Restart = Restart komputer (lebih lama, mulai dari awal)
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+# Tugas 8
+
+1. Navigator.push() = Menambahkan halaman baru di atas halaman sebelumnya. Halaman lama tetap ada di stack dan bisa dikembalikan dengan tombol “back”.
+   Digunakan saat menekan produk di daftar, lalu melihat detail produk. Setelah selesai, mereka bisa kembali ke daftar produk.
+
+   Navigator.pushReplacement() = Mengganti halaman saat ini dengan halaman baru. Halaman lama dihapus dari stack, jadi tidak bisa kembali ke halaman sebelumnya.
+   Digunakan setelah menyimpan data form (misalnya menambah produk baru), aplikasi langsung kembali ke halaman utama (Home) tanpa bisa kembali ke form tersebut.
+
+2. Scaffold: Kerangka utama setiap halaman. Menyediakan area untuk AppBar, Drawer, body, dan FloatingActionButton.
+   AppBar: Bagian atas halaman, berisi judul dan tombol aksi (seperti icon keranjang atau logout).
+   Drawer: Navigasi samping untuk berpindah antar halaman (misalnya ke Home, Products, Orders, Profile).
+
+   contoh di kode: productlist_form.dart line 35 ke bawah
+
+3. Widget Padding digunakan untuk memberikan jarak antara setiap elemen form dengan tepi layar, sehingga tampilan tidak terlalu rapat dan lebih nyaman dilihat oleh pengguna.
+   Digunakan pada kolom Nama Produk, Harga, Deskripsi, Kategori, Thumbnail, dan Switch Produk Unggulan.
+
+   Widget SingleChildScrollView digunakan untuk membungkus seluruh isi form di dalam body halaman.
+   Digunakan untuk membuat halaman dapat discroll.
+
+   Widget Column digunakan untuk menyusun semua elemen form secara vertikal.
+   Digunakan mulai dari kolom Nama Produk hingga tombol Save.
+
+4. Agar Football Shop memiliki identitas visual yang konsisten kita harus mengatur theme global di file main.dart.
