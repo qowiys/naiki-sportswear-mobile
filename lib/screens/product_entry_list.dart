@@ -19,9 +19,10 @@ class _ProductEntryListPageState extends State<ProductEntryListPage> {
     // To connect Android emulator with Django on localhost, use URL http://10.0.2.2/
     // If you using chrome,  use URL http://localhost:8000
     
-    final response = await request.get('http://localhost:8000/json/');
+    final response = await request.get('http://localhost:8000/json/user-products/');
+    print(response);
     
-    // Decode response to json format
+    // Decode response to json format 
     var data = response;
     
     // Convert json data to ProductEntry objects
@@ -58,7 +59,7 @@ class _ProductEntryListPageState extends State<ProductEntryListPage> {
                   SizedBox(height: 8),
                 ],
               );
-            } else {
+            } else {      
               return ListView.builder(
                 itemCount: snapshot.data!.length,
                 itemBuilder: (_, index) => ProductEntryCard(
