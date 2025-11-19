@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:naiki_sportswear/screens/menu.dart';
 import 'package:naiki_sportswear/screens/productlist_form.dart';
+import 'package:naiki_sportswear/screens/product_entry_list.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
@@ -66,6 +67,17 @@ class LeftDrawer extends StatelessWidget {
               ));
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.shopping_bag),
+            title: const Text('Product List'),
+            onTap: () {
+                // Route to product list page
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProductEntryListPage()),
+                );
+            },
+        ),
         ],
       ),
     );

@@ -161,3 +161,125 @@ Analogi Sederhana:
    Digunakan mulai dari kolom Nama Produk hingga tombol Save.
 
 4. Agar Football Shop memiliki identitas visual yang konsisten kita harus mengatur theme global di file main.dart.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+# Tugas 9
+
+1. 
+- Validasi tipe & null-safety
+Dengan model (kelas Dart dengan field bertipe), kamu memaksa parsing dan konversi eksplisit (mis. json['age'] as int atau fallback). Kalau pakai Map bebas, error tipe akan muncul tiba-tiba di runtime (casting error, NoSuchMethodError) dan lebih susah dilacak. Model memudahkan memilih default, menangani missing key, dan mengurangi !/? abuse.
+
+- Keamanan dan konsistensi data
+Model memungkinkan central place untuk normalisasi data (e.g. parse date string → DateTime, ubah 0/1 → bool). Tanpa itu, setiap file UI dapat menangani parsing berbeda → bug.
+
+- Autocompletion & refactor
+IDE (VS Code / Android Studio) otomatis bantu ketika kamu punya tipe; mengganti nama field satu tempat lebih mudah. Map kehilangan semua keuntungan ini.
+
+- Testing & maintainability
+Unit test lebih mudah (bisa buat instance model contoh). Selain itu, jika API berubah, cari/ubah constructors / fromJson cukup di satu file, bukan di banyak widget.
+
+2. 
+- http (package:http)
+Library HTTP dasar di Dart/Flutter untuk GET/POST/PUT/DELETE dan menerima response (headers, body). Cocok untuk request stateless (mis. public API, token-based jika kamu sendiri menambah Authorization header). Dokumentasi dasar ada di panduan Flutter networking. 
+
+- CookieRequest (dari paket pbp_django_auth / pbp_django_auth_extended atau implementasi sejenis)
+Ini wrapper/abstraction di atas HTTP yang mengelola cookie session otomatis (menerima Set-Cookie pada response, menyimpan cookie, mengirimkan cookie pada request selanjutnya), plus fitur helper untuk login/logout menggunakan session Django dan integrasi dengan Provider supaya status autentikasi tersedia di seluruh widget. Jadi CookieRequest memudahkan session-based auth dengan Django. Dokumentasi paket menyarankan menyediakan instance CookieRequest melalui Provider.
+
+3. Alasannya praktis dan teknis:
+
+- State autentikasi terpusat: cookie/session adalah state global (user logged-in, cookie session id). Jika setiap widget pakai instance terpisah, mereka mungkin tidak berbagi cookie yang sama → beberapa bagian aplikasi “tidak tahu” user sudah login.
+
+- Konsistensi header dan pengiriman cookie: CookieRequest bertugas menyisipkan cookie + header CSRF yang diperlukan pada setiap request. Bila hanya dibuat local di satu widget, request lain tidak mendapatkan cookie → 403/unauthorized.
+
+- Mudah inject & mock: pakai Provider atau InheritedWidget membuatnya sederhana untuk testing dan mocking (satu source of truth). Dokumentasi paket menekankan menyediakan CookieRequest via Provider di root app.
+
+4. 
+- 10.0.2.2 pada emulator
+Android emulator tidak melihat localhost/127.0.0.1 host-mu — localhost di emulator berarti device sendiri. Android menyediakan alias khusus 10.0.2.2 untuk menunjuk ke loopback host-mu. Jadi saat dev, URL API dari Flutter (emulator) biasanya http://10.0.2.2:8000/. Jika tidak pakai alamat ini, emulator tidak akan terhubung ke backend lokal. (Dokumentasi Android emulator). 
+
+- ALLOWED_HOSTS di Django
+Django menolak request yang Host header-nya tidak ada di ALLOWED_HOSTS. Kalau emulator mengakses 10.0.2.2, Django mungkin menolak kecuali 10.0.2.2 (atau wildcard saat dev) ditambahkan. Kalau tidak ditambahkan → DisallowedHost dan 400 response. 
+
+- CORS & SameSite / cookie attributes
+Untuk session-based auth via cookies dari origin lain (mis. Flutter web, atau mobile yang meniru cross-origin), backend harus mengizinkan cross-origin dan mengizinkan pengiriman cookie:
+
+  - django-cors-headers: set CORS_ALLOW_ALL_ORIGINS/CORS_ALLOWED_ORIGINS dan CORS_ALLOW_CREDENTIALS = True.
+
+  - Cookie harus dibuat dengan SameSite=None dan Secure sesuai kebutuhan (untuk cross-site cookie pada browser; untuk development HTTP, harus hati-hati dengan Secure yang mengharuskan HTTPS). Jika pengaturan ini salah, cookie session/CSRFTOKEN tidak akan dikirim atau browser/emulator akan menolak set-cookie. Banyak masalah autentikasi lintas-origin disebabkan oleh kombinasi CORS, SameSite dan Secure. 
+
+- Android: permission INTERNET
+Aplikasi Android harus men-declare <uses-permission android:name="android.permission.INTERNET" /> di AndroidManifest.xml. Tanpa ini, tidak ada koneksi jaringan (atau koneksi terbatasi), khususnya di build release. Flutter docs menyarankan ini. 
+
+Konsekuensi kalau salah konfigurasi
+
+- Tidak bisa terhubung (timeout / connection refused).
+- Django menolak dengan DisallowedHost.
+- Cookies tidak diset atau tidak dikirim → login gagal, selalu 403 atau tampilan “not logged in”.
+- Request CORS preflight gagal → browser/Flutter web menolak request.
+
+5. 
+User input di UI —> data dikumpulkan (controller.text atau form fields).
+
+Validasi lokal —> periksa required, format (email), panjang, dsb.
+
+Buat model / DTO —> convert ke Map<String,dynamic> via toJson() dari model Dart.
+
+Panggil service/repository —> service memanggil CookieRequest atau http untuk POST ke endpoint Django.
+
+Pada CookieRequest, cookie (sessionid) dan header CSRF ditambahkan otomatis jika login diperlukan.
+
+Server Django memproses request: validasi, simpan DB, return JSON (biasanya objek baru). Jika server mengubah state session, ia mengirim Set-Cookie header.
+
+Client (Flutter) menerima response: parse JSON → Model.fromJson → update state (Provider / setState / Bloc).
+
+UI rebuild berdasarkan state baru → data tampil.
+
+Jika terjadi error: tampilkan snackbar/dialog berdasarkan HTTP status dan message. Pastikan handling code untuk status 4xx/5xx.
+
+6. Alur end-to-end (session & CSRF):
+
+A. Register
+
+Flutter kirim POST /register/ dengan payload (username, password, etc.) lewat CookieRequest/http.
+
+Django membuat user, biasanya mengembalikan status 201 dan mungkin otomatis login atau tidak. Jika otomatis login, server akan mengirim Set-Cookie: sessionid=... dan Set-Cookie: csrftoken=....
+
+CookieRequest menangkap cookie dan menyimpannya; UI menandai user sebagai logged-in.
+
+B. Login
+
+Flutter kirim POST /login/ dengan credentials. Jika menggunakan CSRF, client harus mengirim header X-CSRFToken (mengambil csrftoken yang sebelumnya diset atau endpoints khusus untuk mendapat CSRF). Namun umumnya paket pbp_django_auth/CookieRequest sudah bantu flow ini: ambil csrf, submit form dengan cookies.
+
+Django memverifikasi, jika sukses mengembalikan Set-Cookie: sessionid=....
+
+CookieRequest menyimpan cookie; karena shared instance, semua widget bisa cek isLoggedIn. UI menavigasi ke area yang perlu login.
+
+C. Menggunakan sesi
+
+Untuk request selanjutnya yang memerlukan autentikasi, CookieRequest menyertakan cookie sessionid di header Cookie, sehingga server tahu user tersebut. Tanpa cookie, server dianggap anonymous.
+
+D. Logout
+
+Flutter panggil endpoint POST /logout/. Django menghapus session dan biasanya menghapus cookie (mengirim Set-Cookie untuk mengosongkan sessionid).
+
+CookieRequest membersihkan cookie lokal; UI update ke state logged-out.
+
+Catatan CSRF: jika backend memakai CSRF protection (Django default), kamu perlu memastikan client mengirim token CSRF pada requests yang state-changing (POST/PUT/DELETE). Paket CookieRequest / integrasi biasanya menyediakan mekanisme untuk mengambil dan mengirim token ini. Jika tidak, server mereturn 403. (Masalah ini sering terjadi jika CORS/credentials/SameSite salah).
+
+7. 
+- Buat djanggo-app baru bernama authentication dan install django-cors-headers
+
+- Konfigurasikan Django untuk CORS & Cookies di settings.py
+
+- Tambahkan fungsi untuk login dan register di authenticaion/views.py dan routing di authenticaion/urls.py
+
+- Buat login.dart dan register.dart di flutter
+
+- Buat models kustom pada flutter berdasarkan endpoint json 
+
+- Buat endpoint json di django untuk daftar produk
+
+- Fetch produk di flutter dan buat list produk dan detail produk
+
+- Tambahkan fungsi untuk logoutdi authenticaion/views.py dan routing di authenticaion/urls.py dan buat file .dart nya
